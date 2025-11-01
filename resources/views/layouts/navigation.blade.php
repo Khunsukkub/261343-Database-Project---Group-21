@@ -1,143 +1,88 @@
-<nav x-data="{ open: false }" class="bg-white border-b border-gray-100">
-  <!-- Primary Navigation Menu -->
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <div class="flex justify-between h-16">
-      <div class="flex">
-        <!-- Logo -->
-        <div class="shrink-0 flex items-center">
-          <a href="{{ route('dashboard') }}">
-            <x-application-logo class="block h-9 w-auto fill-current text-gray-800" />
+{{-- resources/views/layouts/navigation.blade.php --}}
+<nav class="border-b bg-white">
+  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+    <div class="flex h-16 items-center justify-between gap-4">
+      {{-- Brand --}}
+      <a href="{{ url('/') }}" class="flex items-center gap-2">
+        <span class="inline-flex h-8 w-8 items-center justify-center rounded bg-gray-900 text-white font-bold">L</span>
+        <span class="sr-only">Home</span>
+      </a>
+
+      {{-- Main tabs: แสดงตลอด ทั้งมือถือและเดสก์ท็อป --}}
+      <div class="flex items-center gap-6">
+        <a href="{{ route('dashboard') }}"
+           class="text-sm {{ request()->routeIs('dashboard') ? 'text-gray-900 font-semibold' : 'text-gray-600 hover:text-gray-900' }}">
+          Product
+        </a>
+
+        @if (Route::has('cart.index'))
+          <a href="{{ route('cart.index') }}"
+             class="text-sm {{ request()->routeIs('cart.*') ? 'text-gray-900 font-semibold' : 'text-gray-600 hover:text-gray-900' }}">
+            Cart
           </a>
-        </div>
+        @endif
 
-        <!-- Navigation Links -->
-        <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-          <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
-            {{ __('Product') }}
-          </x-nav-link>
-
-          <x-nav-link :href="route('cart.index')" :active="request()->routeIs('cart.*')">
-            {{ __('Cart') }}
-          </x-nav-link>
-
-          <x-nav-link :href="route('orders.history')" :active="request()->routeIs('orders.history')">
-            {{ __('Summary') }}
-          </x-nav-link>
-        </div>
+        @if (Route::has('orders.history'))
+          <a href="{{ route('orders.history') }}"
+             class="text-sm {{ request()->routeIs('orders.history') ? 'text-gray-900 font-semibold' : 'text-gray-600 hover:text-gray-900' }}">
+            Summary
+          </a>
+        @endif
       </div>
 
-      <!-- Settings Dropdown (Desktop) -->
-      <div class="hidden sm:flex sm:items-center sm:ms-6">
-        <x-dropdown align="right" width="48">
-          <x-slot name="trigger">
-            <button class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 bg-white hover:text-gray-700 focus:outline-none transition ease-in-out duration-150">
-              <div class="flex items-center gap-2">
-                <span>{{ Auth::user()->name }}</span>
-                <span @class([
-                  'ms-2 px-2 py-0.5 text-xs rounded',
-                  'bg-amber-100 text-amber-800'   => Auth::user()->member_tier === 'bronze',
-                  'bg-slate-200 text-slate-800'   => Auth::user()->member_tier === 'silver',
-                  'bg-yellow-200 text-yellow-900' => Auth::user()->member_tier === 'gold',
-                ])>
-                  {{ ucfirst(Auth::user()->member_tier ?? 'bronze') }}
-                </span>
-              </div>
-              <div class="ms-1">
-                <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                  <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
-                </svg>
-              </div>
+      {{-- User area ขวาบน --}}
+      <div class="relative flex items-center gap-3">
+        @auth
+          @php
+            $user = auth()->user();
+            $tier = strtolower($user->member_tier ?? 'bronze');
+            $badgeClass = [
+              'gold'   => 'bg-yellow-100 text-yellow-800',
+              'silver' => 'bg-gray-100 text-gray-700',
+              'bronze' => 'bg-amber-100 text-amber-800',
+            ][$tier] ?? 'bg-gray-100 text-gray-700';
+            // ลบ $avatar ออก
+          @endphp
+
+          <div x-data="{ open:false }" class="relative">
+            {{-- ปุ่มที่ไม่มีรูปภาพ --}}
+            <button @click="open=!open" class="group flex items-center gap-3 rounded-full border border-gray-200 bg-white px-4 py-1.5 hover:bg-gray-50">
+              
+              {{-- ลบ <img src="{{ $avatar }}" ... > ออก --}}
+              
+              <span class="text-sm font-medium text-gray-800">{{ Str::limit($user->name, 14) }}</span>
+              <span class="rounded px-2 py-0.5 text-xs {{ $badgeClass }}">{{ ucfirst($tier) }}</span>
+              <svg class="h-4 w-4 text-gray-500" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z" clip-rule="evenodd"/></svg>
             </button>
-          </x-slot>
 
-          <x-slot name="content">
-            <x-dropdown-link :href="route('profile.edit')">
-              {{ __('Profile') }}
-            </x-dropdown-link>
-
-            <x-dropdown-link :href="route('membership')">
-                {{ __('Membership') }}
-            </x-dropdown-link>
-
-
-            <!-- Authentication -->
-            <form method="POST" action="{{ route('logout') }}">
-              @csrf
-              <x-dropdown-link :href="route('logout')"
-                onclick="event.preventDefault(); this.closest('form').submit();">
-                {{ __('Log Out') }}
-              </x-dropdown-link>
-            </form>
-
-            
-
-          </x-slot>
-        </x-dropdown>
-      </div>
-
-      <!-- Hamburger (Mobile) -->
-      <div class="-me-2 flex items-center sm:hidden">
-        <button @click="open = ! open"
-                class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 focus:text-gray-500 transition duration-150 ease-in-out">
-          <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
-            <path :class="{'hidden': open, 'inline-flex': ! open }" class="inline-flex"
-                  stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M4 6h16M4 12h16M4 18h16" />
-            <path :class="{'hidden': ! open, 'inline-flex': open }" class="hidden"
-                  stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Responsive Navigation Menu -->
-  <div :class="{'block': open, 'hidden': ! open}" class="hidden sm:hidden">
-    <div class="pt-2 pb-3 space-y-1">
-      <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
-        {{ __('Product') }}
-      </x-responsive-nav-link>
-
-      <x-responsive-nav-link :href="route('cart.index')" :active="request()->routeIs('cart.*')">
-        {{ __('Cart') }}
-      </x-responsive-nav-link>
-
-      <x-responsive-nav-link :href="route('orders.history')" :active="request()->routeIs('orders.history')">
-        {{ __('History') }}
-      </x-responsive-nav-link>
-    </div>
-
-    <!-- Responsive Settings Options -->
-    <div class="pt-4 pb-1 border-t border-gray-200">
-      <div class="px-4">
-        <div class="font-medium text-base text-gray-800 flex items-center gap-2">
-          <span>{{ Auth::user()->name }}</span>
-          <span @class([
-            'ms-2 px-2 py-0.5 text-xs rounded',
-            'bg-amber-100 text-amber-800'   => Auth::user()->member_tier === 'bronze',
-            'bg-slate-200 text-slate-800'   => Auth::user()->member_tier === 'silver',
-            'bg-yellow-200 text-yellow-900' => Auth::user()->member_tier === 'gold',
-          ])>
-            {{ ucfirst(Auth::user()->member_tier ?? 'bronze') }}
-          </span>
-        </div>
-        <div class="font-medium text-sm text-gray-500">{{ Auth::user()->email }}</div>
-      </div>
-
-      <div class="mt-3 space-y-1">
-        <x-responsive-nav-link :href="route('profile.edit')">
-          {{ __('Profile') }}
-        </x-responsive-nav-link>
-
-        <!-- Authentication -->
-        <form method="POST" action="{{ route('logout') }}">
-          @csrf
-          <x-responsive-nav-link :href="route('logout')"
-            onclick="event.preventDefault(); this.closest('form').submit();">
-            {{ __('Log Out') }}
-          </x-responsive-nav-link>
-        </form>
+            {{-- dropdown เฉพาะเมนูผู้ใช้เท่านั้น ไม่ยุ่งกับ Product/Cart/Summary --}}
+            <div x-cloak x-show="open" @click.away="open=false"
+                 class="absolute right-0 mt-2 w-56 overflow-hidden rounded-md border border-gray-200 bg-white shadow z-50">
+              <a href="{{ route('profile.edit') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Profile</a>
+              @if (Route::has('membership'))
+                <a href="{{ route('membership') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Membership</a>
+              @endif
+              <form method="POST" action="{{ route('logout') }}">
+                @csrf
+                <button type="submit" class="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50">Log Out</button>
+              </form>
+            </div>
+          </div>
+        @else
+          {{-- Login/Register เหมือนเดิม --}}
+          @if (Route::has('login'))
+            <a href="{{ route('login') }}"
+               class="rounded border border-gray-300 bg-white px-4 py-1.5 text-sm text-gray-800 hover:bg-gray-50">
+              Log in
+            </a>
+          @endif
+          @if (Route::has('register'))
+            <a href="{{ route('register') }}"
+               class="rounded border border-gray-300 bg-white px-4 py-1.5 text-sm text-gray-800 hover:bg-gray-50">
+              Register
+            </a>
+          @endif
+        @endauth
       </div>
     </div>
   </div>

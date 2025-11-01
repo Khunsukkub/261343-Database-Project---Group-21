@@ -20,7 +20,7 @@
         <thead>
           <tr class="bg-gray-100">
             <th class="border px-4 py-2 text-left">Tier</th>
-            <th class="border px-4 py-2 text-left">ยอดสั่งซื้อขั้นต่ำ (฿)</th>
+            <th class="border px-4 py-2 text-left">ยอดสั่งซื้อสะสมขั้นต่ำ (฿)</th>
             <th class="border px-4 py-2 text-left">ส่วนลด</th>
             <th class="border px-4 py-2 text-left">สิทธิประโยชน์</th>
           </tr>
