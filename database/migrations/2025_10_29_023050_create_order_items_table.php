@@ -14,9 +14,10 @@ return new class extends Migration
         Schema::create('order_items', function (Blueprint $t) {
         $t->id();
         $t->foreignId('order_id')->constrained()->cascadeOnDelete();
-        $t->foreignId('product_id')->constrained()->restrictOnDelete();
+        $t->foreignId('product_id')->constrained()->cascadeOnDelete();
+        $t->string('name');                               // สำรองชื่อ ณ เวลาซื้อ
+        $t->decimal('price',10,2);                        // ราคา ณ เวลาซื้อ
         $t->unsignedInteger('qty');
-        $t->decimal('price',10,2);
         $t->timestamps();
     });
     }

@@ -65,4 +65,17 @@ class User extends Authenticatable
         return $this->hasMany(ReminderModel::class);
     }
 
+    public function recalcTier(): void
+    {
+        $spent = (float) $this->lifetime_spent;
+        $th    = config('membership.thresholds');
+
+        $tier = 'bronze';
+        if ($spent >= ($th['gold'] ?? 1000))   $tier = 'gold';
+        elseif ($spent >= ($th['silver'] ?? 300)) $tier = 'silver';
+
+        $this->member_tier = $tier;
+        $this->save();
+    }
+
 }

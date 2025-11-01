@@ -9,11 +9,11 @@ class Cart extends Model
     protected $table = 'carts';
 
     protected $fillable = [
-        'user_id',      // ผู้ใช้เจ้าของตะกร้า
-        'product_id',   // สินค้า
-        'qty',          // จำนวน
-        'price',        // ราคาต่อหน่วย ณ ตอนหยิบใส่ตะกร้า
-        'selected',     // ติ๊กเลือกไว้สำหรับคิดเงินหรือไม่
+        'user_id',      
+        'product_id',   
+        'qty',          
+        'price',        
+        'selected',     
     ];
 
     protected $casts = [
@@ -22,6 +22,7 @@ class Cart extends Model
         'selected'   => 'boolean',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
+        'checked_out_at' => 'datetime',
     ];
 
     // ความสัมพันธ์ที่พบบ่อย
@@ -36,4 +37,8 @@ class Cart extends Model
 
     // scope ช่วยดึงเฉพาะที่ถูกเลือก
     public function scopeSelected($q) { return $q->where('selected', true); }
+
+    public function scopeActive($q) {
+        return $q->whereNull('checked_out_at');
+    }
 }

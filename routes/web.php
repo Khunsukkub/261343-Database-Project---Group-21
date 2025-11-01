@@ -1,54 +1,68 @@
 <?php
 
-use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
+
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ProfilePhotoController;
 use App\Http\Controllers\CartController;
+use App\Http\Controllers\ProductController;
 use App\Http\Controllers\OrderHistoryController;
+use App\Http\Controllers\HomeController;
+use App\Http\Controllers\MembershipController;
 
 
-
-Route::middleware('auth')->group(function () {
-    Route::get('/orders/history', [OrderHistoryController::class,'index'])->name('orders.history');
-    Route::post('/orders/{order}/cancel', [OrderHistoryController::class,'cancel'])->name('orders.cancel');
-    Route::post('/orders/{order}/pay', [OrderHistoryController::class,'pay'])->name('orders.pay');
-});
+Route::get('/membership', [MembershipController::class, 'index'])
+    ->middleware(['auth'])
+    ->name('membership');
 
 
-Route::resource('cart', CartController::class)
-    ->only(['index','create','store','edit','update','destroy'])
-    ->middleware('auth');
+Route::get('/', [HomeController::class, 'index'])->name('home');
 
 
-Route::get('/me/photo', [ProfilePhotoController::class, 'me'])
-    ->middleware('auth')
-    ->name('me.photo');
+    /* ---------- Auth required ---------- */
+    Route::middleware('auth')->group(function () {
+    /* Cart */
+    // กัน GET /cart/{id} ไม่ให้ 403 -> ส่งกลับ index
+    Route::get('/cart/{item}', fn () => redirect()->route('cart.index'))
+        ->whereNumber('item');
 
+    Route::resource('cart', CartController::class)
+        ->only(['index','create','store','edit','update','destroy']);
 
-Route::get('/', function () {
-    return view('welcome');
-});
+    /* Orders */
+    Route::post('/orders/checkout', [OrderHistoryController::class,'checkout'])
+        ->name('orders.checkout');
+    Route::get('/orders/history', [OrderHistoryController::class,'index'])
+        ->name('orders.history');
+    Route::post('/orders/{order}/pay', [OrderHistoryController::class,'pay'])
+        ->name('orders.pay');
+    Route::post('/orders/{order}/cancel', [OrderHistoryController::class,'cancel'])
+        ->name('orders.cancel');
 
-Route::get('/dashboard', function () {
-    return view('dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+    /* Products */
+    Route::get('/products/{product}', [ProductController::class,'show'])
+        ->name('products.show');
 
-Route::middleware('auth')->group(function () {
+    /* Profile */
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-    Route::patch('/profile/photo/update', [UserController::class, 'updateProfilePhoto'])->name('profile.photo.update');
-    Route::get('/profile/photo/{filename}', [UserController::class, 'showProfilePhoto'])->where('filename', '.*')->name('user.photo');
-    // routes/web.php(Cart)
-    Route::get('/cart',[CartController::class,'index'])->name('cart.index');
-    Route::post('/cart',[CartController::class,'store'])->name('cart.store');
-    Route::patch('/cart/{item}',[CartController::class,'update'])->name('cart.update');
-    Route::delete('/cart/{item}',[CartController::class,'destroy'])->name('cart.destroy');
-    Route::patch('/cart/{item}/toggle', [CartController::class,'toggle'])->name('cart.toggle');
-    Route::get('/orders/history', [OrderHistoryController::class,'index'])
-    ->name('orders.history');
+    Route::patch('/profile/photo/update', [UserController::class, 'updateProfilePhoto'])
+        ->name('profile.photo.update');
+    Route::get('/profile/photo/{filename}', [UserController::class, 'showProfilePhoto'])
+        ->where('filename', '.*')->name('user.photo');
 
-});
+    /* Me photo */
+    Route::get('/me/photo', [ProfilePhotoController::class, 'me'])
+        ->name('me.photo');
+
+    /* Dashboard */
+    Route::get('/dashboard', [ProductController::class, 'index'])
+        ->middleware('verified')
+        ->name('dashboard');
+    });
+
+
 
 require __DIR__.'/auth.php';

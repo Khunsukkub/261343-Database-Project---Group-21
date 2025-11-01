@@ -14,8 +14,9 @@ return new class extends Migration
         Schema::create('orders', function (Blueprint $t) {
         $t->id();
         $t->foreignId('user_id')->constrained()->cascadeOnDelete();
-        $t->string('status')->index();          // pending_payment|processing|shipped|cancelled
-        $t->decimal('total',10,2)->default(0);
+        $t->string('status')->default('unpaid');         // unpaid|paid|canceled
+        $t->unsignedInteger('total_qty')->default(0);
+        $t->decimal('total_amount',10,2)->default(0);
         $t->timestamps();
     });
     }

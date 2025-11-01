@@ -24,13 +24,6 @@
                  class="w-full rounded-md border-gray-300 focus:border-sky-500 focus:ring-sky-500">
           @error('qty') <p class="text-red-600 text-sm mt-1">{{ $message }}</p> @enderror
         </div>
-        <div>
-          <label class="block text-sm text-gray-700 mb-1">เลือกคิดเงิน</label>
-          <select name="selected" class="w-full rounded-md border-gray-300 focus:border-sky-500 focus:ring-sky-500">
-            <option value="1" selected>ใช่</option>
-            <option value="0">ไม่ใช่</option>
-          </select>
-        </div>
       </div>
 
       <div class="flex items-center justify-end gap-2">
