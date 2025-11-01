@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Cart;
 use App\Models\Product;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class CartController extends Controller
 {
@@ -28,38 +29,50 @@ class CartController extends Controller
         return view('cart.create', compact('products'));
     }
 
-    public function store(Request $req)
+    public function store(Request $request)
     {
-        $data = $req->validate([
-            'product_id' => ['required','integer','exists:products,id'],
-            'qty'        => ['nullable','integer','min:1'],
-        ]);
-        $qty = $data['qty'] ?? 1;
+        $user = $request->user();
+        $product = Product::findOrFail($request->input('product_id'));
+        $qty = max(1, (int) $request->input('qty', 1));
 
-        $userId  = $req->user()->id;
-        $product = Product::findOrFail($data['product_id']);
+        // ราคาปกติ
+        $price = $product->price;
 
-        $item = Cart::firstOrNew([
-            'user_id'    => $userId,
-            'product_id' => $product->id,
-        ]);
-
-        $want = ($item->exists ? (int)$item->qty : 0) + (int)$qty;
-        $stock = (int)($product->stock ?? 0);
-
-        if ($stock <= 0) {
-            return back()->with('err', "สินค้า {$product->name} หมดสต็อก");
-        }
-        if ($want > $stock) {
-            return back()->with('err', "สินค้า {$product->name} มีแค่ {$stock} ชิ้น");
+        // ส่วนลดตาม tier
+        $discount = 0;
+        if ($user->member_tier === 'silver') {
+            $discount = 0.05;
+        } elseif ($user->member_tier === 'gold') {
+            $discount = 0.10;
         }
 
-        $item->qty      = $want;
-        $item->price    = (float)$product->price;
-        $item->selected = $item->selected ?? true;
-        $item->save();
+        // ราคาหลังหักส่วนลด
+        $finalPrice = round($price * (1 - $discount), 2);
 
-        return redirect()->route('cart.index')->with('ok','เพิ่มลงตะกร้าแล้ว');
+        // ตรวจสอบว่ามีสินค้าในตะกร้าแล้วหรือไม่
+        $existing = Cart::where('user_id', $user->id)
+            ->where('product_id', $product->id)
+            ->first();
+
+        if ($existing) {
+            // ถ้ามีอยู่แล้วให้เพิ่มจำนวน
+            $existing->qty += $qty;
+            $existing->price = $finalPrice;
+            $existing->save();
+        } else {
+            // ถ้ายังไม่มีให้สร้างใหม่
+            Cart::create([
+                'user_id' => $user->id,
+                'product_id' => $product->id,
+                'qty' => $qty,
+                'price' => $finalPrice,
+            ]);
+        }
+
+        return redirect()
+        ->route('cart.index')
+        ->with('success', "เพิ่มสินค้า {$product->name} ลงตะกร้าแล้ว (ลดราคา " . ($discount * 100) . "% สำหรับสมาชิก {$user->member_tier})");
+
     }
 
     public function edit(Cart $cart)

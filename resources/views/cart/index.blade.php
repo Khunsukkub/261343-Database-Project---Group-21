@@ -6,12 +6,14 @@
   </x-slot>
 
   @php
-    $items        = $items ?? collect();
-    $grandTotal   = $items->sum(fn($it) => (int)$it->qty * (float)$it->price);
+    $items = $items ?? collect();
     $hasStockIssue = false;
+    $memberTier = auth()->user()?->member_tier ?? 'bronze';
+    $discountPercent = $memberTier === 'silver' ? 5 : ($memberTier === 'gold' ? 10 : 0);
   @endphp
 
   <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
     {{-- Flash messages --}}
     @if(session('ok'))
       <div class="mb-4 rounded border border-green-200 bg-green-50 px-4 py-2 text-green-800">
@@ -29,11 +31,20 @@
       </div>
     @endif
 
+    {{-- ส่วนหัว --}}
     <div class="flex items-baseline justify-between">
-      <h3 class="text-2xl font-bold">รายการ</h3>
+      <h3 class="text-2xl font-bold">รายการสินค้า</h3>
       <span class="text-gray-500">{{ $items->count() }} รายการ</span>
     </div>
 
+    {{-- แจ้งส่วนลด --}}
+    @if($discountPercent > 0)
+      <div class="mt-3 text-sm text-green-700 bg-green-50 border border-green-200 rounded px-4 py-2">
+        🎉 คุณได้รับส่วนลด {{ $discountPercent }}% จากระดับสมาชิก {{ ucfirst($memberTier) }}
+      </div>
+    @endif
+
+    {{-- รายการสินค้า --}}
     <div class="mt-4 space-y-5">
       @forelse($items as $item)
         @php
@@ -43,35 +54,39 @@
 
           $stock = (int) ($p?->stock ?? 0);
           $qty   = (int) $item->qty;
-          $price = (float) $item->price;
+          $originalPrice = (float) ($p?->price ?? $item->price);
+          $discountedPrice = round($originalPrice * (1 - $discountPercent/100), 2);
 
-          $outOfStock  = $stock <= 0;
-          $overStock   = !$outOfStock && $qty > $stock;
+          $outOfStock = $stock <= 0;
+          $overStock  = !$outOfStock && $qty > $stock;
           $hasIssueRow = $outOfStock || $overStock;
           if ($hasIssueRow) { $hasStockIssue = true; }
 
-          // ค่าที่ปลอดภัยสำหรับใส่ใน input (อย่างน้อย 1 และไม่เกิน stock)
           $safeInputQty = $outOfStock ? 1 : max(1, min($qty, $stock));
         @endphp
 
         <div class="border rounded-lg bg-white {{ $hasIssueRow ? 'ring-1 ring-red-300' : '' }}">
           <div class="grid grid-cols-[112px_1fr_auto_auto] items-center gap-4 p-4">
-            {{-- รูปสินค้า --}}
-            <a href="{{ $p ? route('products.show', $p->id) : '#' }}" class="block w-24 h-24 rounded overflow-hidden">
-              <img src="{{ $img }}" alt="{{ $p->name ?? ('สินค้า #'.$item->product_id) }}" class="w-24 h-24 object-cover">
+
+            {{-- รูป --}}
+            <a href="#" class="block w-24 h-24 rounded overflow-hidden">
+              <img src="{{ $img }}" alt="{{ $p->name ?? 'สินค้า #'.$item->product_id }}" class="w-24 h-24 object-cover">
             </a>
 
-            {{-- ชื่อ/คำอธิบาย/ราคา + สต็อก --}}
+            {{-- ข้อมูลสินค้า --}}
             <div>
-              <a href="{{ $p ? route('products.show', $p->id) : '#' }}" class="text-lg font-semibold hover:underline">
-                {{ $p->name ?? 'สินค้า #'.$item->product_id }}
-              </a>
+              <p class="text-lg font-semibold">{{ $p->name ?? 'สินค้า #'.$item->product_id }}</p>
 
-              @if(filled($p?->description))
-                <p class="mt-1 text-sm text-gray-600 line-clamp-2">{{ $p->description }}</p>
-              @endif
-
-              <div class="mt-1 text-sm text-gray-500">ราคาต่อหน่วย ${{ number_format($price, 2) }}</div>
+              <div class="mt-1 text-sm text-gray-600">
+                ราคาปกติ:
+                <span class="line-through text-gray-400">
+                  ฿{{ number_format($originalPrice, 2) }}
+                </span>
+              </div>
+              <div class="text-sm text-amber-700 font-semibold">
+                ราคาหลังลด {{ $discountPercent }}%:
+                ฿{{ number_format($discountedPrice, 2) }}
+              </div>
 
               <div class="mt-1 text-sm">
                 @if($outOfStock)
@@ -90,56 +105,54 @@
               </div>
             </div>
 
-            {{-- จำนวน + อัปเดต (แก้เคส disabled แล้วไม่ส่งด้วย hidden) --}}
+            {{-- จำนวน --}}
             <div class="text-right">
               <div class="text-sm text-gray-600">จำนวน {{ $qty }} ชิ้น</div>
 
-              <div class="mt-2 flex items-center justify-end gap-2">
-                <form method="POST" action="{{ route('cart.update', $item) }}" class="flex items-center gap-2">
-                  @csrf
-                  @method('PATCH')
+              <form method="POST" action="{{ route('cart.update', $item) }}" class="mt-2 flex items-center justify-end gap-2">
+                @csrf
+                @method('PATCH')
 
-                  @if($outOfStock)
-                    {{-- แสดงค่าให้เห็น แต่ไม่ให้แก้ไข และส่งค่าผ่าน hidden --}}
-                    <input type="hidden" name="qty" value="{{ $safeInputQty }}">
-                    <input type="number"
-                           value="{{ $safeInputQty }}"
-                           class="w-20 rounded-md border text-right border-red-400 text-red-700"
-                           disabled>
-                  @else
-                    <input
-                      type="number"
-                      name="qty"
-                      min="1"
-                      @if($stock > 0) max="{{ $stock }}" @endif
-                      value="{{ $safeInputQty }}"
-                      class="w-20 rounded-md border text-right {{ $hasIssueRow ? 'border-red-400 text-red-700' : 'border-gray-300' }}">
-                  @endif
+                @if($outOfStock)
+                  <input type="hidden" name="qty" value="{{ $safeInputQty }}">
+                  <input type="number" value="{{ $safeInputQty }}" class="w-20 border text-right border-red-400 text-red-700" disabled>
+                @else
+                  <input
+                    type="number"
+                    name="qty"
+                    min="1"
+                    @if($stock > 0) max="{{ $stock }}" @endif
+                    value="{{ $safeInputQty }}"
+                    class="w-20 border text-right {{ $hasIssueRow ? 'border-red-400 text-red-700' : 'border-gray-300' }}">
+                @endif
 
-                  <button type="submit"
-                          class="px-2 py-1 border rounded hover:bg-gray-50"
-                          @if($outOfStock) disabled @endif>
-                    อัปเดต
-                  </button>
-                </form>
-              </div>
+                <button type="submit"
+                        class="px-2 py-1 border rounded hover:bg-gray-50"
+                        @if($outOfStock) disabled @endif>
+                  อัปเดต
+                </button>
+              </form>
 
               @if($outOfStock)
                 <div class="mt-1 text-xs text-red-600">เอาออกหรือรอเติมสต็อกก่อน</div>
               @endif
             </div>
 
-            {{-- ราคารวม + ลบ --}}
+            {{-- รวม --}}
             <div class="text-right">
-              <div class="text-xl font-extrabold {{ $hasIssueRow ? 'text-red-600' : 'text-amber-600' }}">
-                ${{ number_format($qty * $price, 2) }}
+              <div class="text-xs text-gray-500">
+                (฿{{ number_format($discountedPrice, 2) }} × {{ $qty }})
+              </div>
+              <div class="text-lg font-bold {{ $hasIssueRow ? 'text-red-600' : 'text-amber-600' }}">
+                ฿{{ number_format($qty * $discountedPrice, 2) }}
               </div>
 
               <form method="POST" action="{{ route('cart.destroy', $item) }}"
                     onsubmit="return confirm('ลบรายการนี้?')" class="mt-2">
                 @csrf
                 @method('DELETE')
-                <button type="submit" class="px-3 py-1.5 text-sm text-red-600 border border-red-200 rounded hover:bg-red-50">
+                <button type="submit"
+                        class="px-3 py-1.5 text-sm text-red-600 border border-red-200 rounded hover:bg-red-50">
                   ลบ
                 </button>
               </form>
@@ -151,24 +164,47 @@
       @endforelse
     </div>
 
+    {{-- สรุปราคารวม --}}
     @php
-      $isEmpty         = $items->isEmpty() || $grandTotal <= 0;
-      $disableCheckout = $isEmpty || $hasStockIssue;
+      $totalBeforeDiscount = $items->sum(fn($it) => (int)$it->qty * (float)($it->product?->price ?? $it->price));
+      $totalAfterDiscount = round($totalBeforeDiscount * (1 - $discountPercent / 100), 2);
+      $discountAmount = $totalBeforeDiscount - $totalAfterDiscount;
+      $disableCheckout = $items->isEmpty() || $hasStockIssue;
     @endphp
 
-    <div class="mt-6 flex items-center justify-between">
-      <div class="text-lg">
-        รวมทั้งสิ้น:
-        <span class="{{ $hasStockIssue ? 'text-red-600' : 'text-amber-600' }} font-bold">
-          ${{ number_format($grandTotal, 2) }}
-        </span>
-        @if($hasStockIssue)
-          <span class="ml-2 text-sm text-red-600">(มีรายการหมด/เกินสต็อก)</span>
-        @endif
+    <div class="mt-6 border-t pt-4">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div class="text-sm text-gray-700">
+          ระดับสมาชิก:
+          <span class="font-semibold capitalize">{{ $memberTier }}</span>
+          @if($discountPercent > 0)
+            <span class="text-amber-600 ml-1">(ส่วนลด {{ $discountPercent }}%)</span>
+          @endif
+        </div>
+
+        <div class="text-right space-y-1">
+          <div class="text-gray-600">
+            ราคารวมก่อนลด:
+            <span class="font-semibold">฿{{ number_format($totalBeforeDiscount, 2) }}</span>
+          </div>
+
+          @if($discountPercent > 0)
+            <div class="text-gray-600">
+              ส่วนลดทั้งหมด:
+              <span class="font-semibold text-green-600">-฿{{ number_format($discountAmount, 2) }}</span>
+            </div>
+          @endif
+
+          <div class="text-lg font-bold {{ $hasStockIssue ? 'text-red-600' : 'text-amber-700' }}">
+            ยอดสุทธิ: ฿{{ number_format($totalAfterDiscount, 2) }}
+          </div>
+        </div>
       </div>
 
-      <div class="flex gap-3">
-        <a href="{{ route('dashboard') }}" class="px-4 py-2 border rounded-md hover:bg-gray-50">เลือกสินค้าเพิ่ม</a>
+      <div class="mt-4 flex items-center justify-end gap-3">
+        <a href="{{ route('dashboard') }}" class="px-4 py-2 border rounded-md hover:bg-gray-50">
+          เลือกสินค้าเพิ่ม
+        </a>
 
         <form method="POST" action="{{ route('orders.checkout') }}">
           @csrf
