@@ -24,7 +24,7 @@ class ProductSeeder extends Seeder
             ['name'=>'คิตตี้บอย',         'price'=>  8.00, 'stock'=> 28, 'image_path'=>'products/kitty.jpg',     'description'=>'คาแรกเตอร์ขี้เล่น รุ่นบอย'],
             ['name'=>'จรวดกระดาษโปร',     'price'=>  3.00, 'stock'=>120, 'image_path'=>'products/rocket.jpg',    'description'=>'พับง่าย บินไกล เหมาะกับสายทดลอง'],
             ['name'=>'หมึกปีศาจ',         'price'=> 15.00, 'stock'=> 18, 'image_path'=>'products/squid.jpg',     'description'=>'ฟิกเกอร์หมึก 8 แขน ปรับท่าทางได้'],
-            ['name'=>'ชามะนาว',           'price'=>  2.00, 'stock'=>200, 'image_path'=>'products/lemon-tea.jpg', 'description'=>'ชามะนาวพร้อมชง แก้วละสบายคอ'],
+            ['name'=>'ชามะนาว',           'price'=>  2.00, 'stock'=>200, 'image_path'=>'products/lemon.jpg', 'description'=>'ชามะนาวพร้อมชง แก้วละสบายคอ'],
             ['name'=>'คุกกี้ดำ',          'price'=>  6.00, 'stock'=> 95, 'image_path'=>'products/cookie.jpg',    'description'=>'คุกกี้ช็อกโก้เข้ม สูตรกรอบนอกนุ่มใน'],
             ['name'=>'เสือบรู๊ค',         'price'=> 18.00, 'stock'=> 14, 'image_path'=>'products/tiger.jpg',     'description'=>'ฟิกเกอร์เสือ ลายเส้นจัดจ้าน'],
             ['name'=>'นกฮูกบางกอก',       'price'=>  9.00, 'stock'=> 26, 'image_path'=>'products/owl.jpg',       'description'=>'นกฮูกนักคิด ตั้งโต๊ะอ่านหนังสือ'],
