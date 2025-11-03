@@ -13,7 +13,8 @@ class Cart extends Model
         'product_id',   
         'qty',          
         'price',        
-        'selected',     
+        'selected', 
+        'checked_out_at',    
     ];
 
     protected $casts = [
